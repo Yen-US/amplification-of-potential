@@ -32,17 +32,17 @@ See [Deployment.md](./Deployment.md) for the complete deployment and validation 
 
 The Beacon stages are implemented in the application content under `lib/aop-gather/`.
 
-## Important backend boundary
+## Backend API routes
 
-The frontend calls these same-origin endpoints:
+The frontend calls these same-origin endpoints, implemented in `app/api/aop-gather/`:
 
-- `POST /api/aop-gather/prompt`
-- `POST /api/aop-gather/feedback`
-- `POST /api/aop-gather/optin`
+- `POST /api/aop-gather/prompt` — generates a conversation prompt via OpenAI (`OPENAI_API_KEY`). Falls back to a curated example from `lib/aop-gather/examples.ts` if the key is missing, the call times out (4s), or the response is empty.
+- `POST /api/aop-gather/feedback` — stores a thumbs up/down rating for a generated prompt in Supabase (`aop_beacon_feedback` table).
+- `POST /api/aop-gather/optin` — stores an email opt-in with journey data in Supabase (`aop_beacon_email_optins` table).
 
-Those API handlers are **not present in this repository**. The landing page can be deployed independently, but the complete AI prompt, feedback, and email opt-in behavior requires compatible backend endpoints to be supplied by the receiving environment.
+All three validate their payload with `zod`, rate-limit by IP (in-memory, per-instance), and degrade gracefully: if `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` aren't set, feedback/optin accept the request but report `stored: false` instead of failing the user flow. Table schemas are in `supabase/migrations/`.
 
-The prompt screen has client-side failure handling, but it does not automatically replace a missing endpoint with a deterministic prompt. Verify the entire `/gather` journey before treating a deployment as production-ready.
+Set the required env vars (see `.env.example`) before deploying if you want AI-generated prompts and persisted feedback/opt-ins; without them the Beacon flow still works end-to-end using fallback prompts.
 
 ## Technology
 
@@ -87,7 +87,7 @@ pnpm start
 
 ## Configuration
 
-No environment variables are referenced by the code currently in this repository.
+Three optional environment variables enable AI-generated prompts and Supabase persistence for feedback/opt-ins (see `.env.example`); the app runs without them using fallback prompts and no-op storage.
 
 The following values are hardcoded and should be reviewed before transferring domains or analytics ownership:
 
@@ -101,7 +101,7 @@ The following values are hardcoded and should be reviewed before transferring do
 
 If the production hostname changes, update all canonical and follow-up URLs. If analytics ownership changes, replace or remove the Google Analytics ID.
 
-Backend credentials, provider keys, mailing-list configuration, data stores, and telemetry for the three `/api/aop-gather/*` endpoints are intentionally not documented here because their implementation is absent. Do not commit credentials to this repository.
+Required env vars: `OPENAI_API_KEY` (AI prompt generation), `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (feedback/opt-in storage — table schemas in `supabase/migrations/`). Do not commit credentials to this repository.
 
 ## Project structure
 
