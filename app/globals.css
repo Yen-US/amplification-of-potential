@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import "@fontsource-variable/cormorant-garamond/wght.css";
+@import "@fontsource-variable/inter/wght.css";
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond Variable", ui-serif, Georgia, serif;
+}
+
+body {
+  background: #ffffff;
+  color: #14150f;
+}
